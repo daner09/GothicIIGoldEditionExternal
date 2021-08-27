@@ -2,6 +2,10 @@
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <vector>
+#include "variables.hpp"
+#include <string>
+
+bool variables::inf_hp, variables::inf_mana, variables::temporary_strenght;
 
 uintptr_t module_base_address(DWORD process_id, const wchar_t* module_name)
 {
@@ -40,104 +44,139 @@ uintptr_t multilevel_pointer(HANDLE process, uintptr_t pointer, std::vector<unsi
 	return address;
 }
 
+void update_menu()
+{
+	system("cls");
+
+	for (int i = 0; i < 31; i++) std::cout << "-";
+
+	std::cout << "\nF1 - inf. hp\nF2 - inf. mana\nF3 - temporary strenght\n";
+
+	for (int i = 0; i < 31; i++) std::cout << "-";;
+
+	if (variables::inf_hp)
+	{
+		std::cout << "\ninf. hp - active";
+	}
+
+	if (variables::inf_mana)
+	{
+		std::cout << "\ninf. mana - active";
+	}
+
+	if (variables::temporary_strenght)
+	{
+		std::cout << "\ntemporary strenght - active";
+	}
+
+	std::cout << "\n"; // yes.
+
+	if (variables::inf_hp || variables::inf_mana || variables::temporary_strenght) for (int i = 0; i < 31; i++) std::cout << "-";;
+}
+
 void main()
 {
-	//0x1B8 - local
-	//? + ?[4] + 0x1B8 - local pointers?
-	/* upon damage
-	
-	EAX=00000000
-EBX=FFFFFFFF
-ECX=28187248
-EDX=FFFFFFFB
-ESI=0126EA10
-EDI=FFFFFFFB
-EBP=28187248
-ESP=0126E638
-EIP=006C506D
 
-Probable base pointer =28187248
+	update_menu();
 
-Label1
-006C5064 - jne 006C50B8
-006C5066 - add [ecx+eax*4+000001B8],edx
-006C506D - jns 006C507A
-006C506F - mov [ecx+eax*4+000001B8],00000000
-
-	
-	*/
-
-	/* local loop
-	
-	EAX=0126F274
-EBX=281A5960
-ECX=28187248
-EDX=0000000F
-ESI=281A5960
-EDI=0BC4FCA8
-EBP=00000000
-ESP=0126F198
-EIP=006CA616
-
-Probable base pointer =28187248
-
-Label1
-006CA60F - nop
-006CA610 - mov edx,[ecx+000001B8]
-006CA616 - xor eax,eax
-006CA618 - test edx,edx
-
-	
-	*/
-
-	/* here is module + pointer + hp | for ur own usage if u r going to paste my code, hf
-	
-	EAX=00000901
-EBX=008297D0
-ECX=2A1293D0
-EDX=C1C2B500
-ESI=0126F178
-EDI=00829B4C
-EBP=0079762C
-ESP=0126F0DC
-EIP=0049C34B
-
-Probable base pointer =008297D0
-
-Label1
-0049C340 - mov eax,[007F52CC]
-0049C345 - mov ecx,[ebx+0000013C]
-0049C34B - push eax
-0049C34C - push ecx
-
-	
-	*/
-
-	HWND hwnd = FindWindowA(NULL, "Gothic II - 2.6 (pol)");
-	int value = 1;
-	int max_hp_value = 0;
-
-	if (hwnd)
+	while (true)
 	{
-		DWORD process_id;
-		GetWindowThreadProcessId(hwnd, &process_id);
-		HANDLE handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, process_id);
-		uintptr_t module_base = module_base_address(process_id, L"Gothic2.exe");
-		uintptr_t pointer_base_address = module_base + 0x42990C;
-		uintptr_t hp_address = multilevel_pointer(handle, pointer_base_address, { 0x1B8 });
-		uintptr_t max_hp_address = multilevel_pointer(handle, pointer_base_address, { 0x1BC });
-
-		if (process_id)
+		if (GetAsyncKeyState(VK_F1) & 1)
 		{
-			for (;;)
+			variables::inf_hp = !variables::inf_hp;
+			update_menu();
+		}
+
+		if (GetAsyncKeyState(VK_F2) & 1)
+		{
+			variables::inf_mana = !variables::inf_mana;
+			update_menu();
+		}
+
+		if (GetAsyncKeyState(VK_F3) & 1)
+		{
+			variables::temporary_strenght = !variables::temporary_strenght;
+			update_menu();
+		}
+
+		HWND hwnd = FindWindowA(NULL, "Gothic II - 2.6 (pol)");
+
+		int hp_value = 1, mana_value= 1;
+		int max_hp_value = 0, max_mana_value = 0;
+		int new_temporary_strenght_value = 0;
+		static int static_old_strenght_value = 0, old_strenght_value = 0;
+
+		if (hwnd)
+		{
+			DWORD process_id;
+			GetWindowThreadProcessId(hwnd, &process_id);
+			HANDLE handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, process_id);
+			uintptr_t module_base = module_base_address(process_id, L"Gothic2.exe");
+			uintptr_t pointer_base_address = module_base + 0x42990C;
+
+			uintptr_t hp_address = multilevel_pointer(handle, pointer_base_address, { 0x1B8 });
+			uintptr_t max_hp_address = multilevel_pointer(handle, pointer_base_address, { 0x1BC });
+
+			uintptr_t mana_address = multilevel_pointer(handle, pointer_base_address, { 0x1C0 });
+			uintptr_t max_mana_address = multilevel_pointer(handle, pointer_base_address, { 0x1C4 });
+
+			uintptr_t strenght_address = multilevel_pointer(handle, pointer_base_address, { 0x1C8 });
+
+			if (process_id)
 			{
-				ReadProcessMemory(handle, (BYTE*)max_hp_address, &max_hp_value, sizeof(max_hp_value), 0);
+				if (variables::inf_hp)
+				{
+					ReadProcessMemory(handle, (BYTE*)max_hp_address, &max_hp_value, sizeof(max_hp_value), 0);
 
-				value = max_hp_value;
+					hp_value = max_hp_value;
 
-				WriteProcessMemory(handle, (BYTE*)hp_address, &value, sizeof(value), 0);
+					WriteProcessMemory(handle, (BYTE*)hp_address, &hp_value, sizeof(hp_value), 0);
+				}
+
+				if (variables::inf_mana)
+				{
+					ReadProcessMemory(handle, (BYTE*)max_mana_address, &max_mana_value, sizeof(max_mana_value), 0);
+
+					mana_value = max_mana_value;
+
+					WriteProcessMemory(handle, (BYTE*)max_mana_address, &mana_value, sizeof(mana_value), 0);
+				}
+
+				static bool at_least_once_enabled_strenght_hack;
+
+				if (variables::temporary_strenght)
+				{
+					if (!at_least_once_enabled_strenght_hack)
+					{
+						ReadProcessMemory(handle, (BYTE*)strenght_address, &old_strenght_value, sizeof(old_strenght_value), 0);
+
+						static_old_strenght_value = old_strenght_value;
+
+						at_least_once_enabled_strenght_hack = true;
+					}
+					else
+					{
+						new_temporary_strenght_value = 190;
+
+						WriteProcessMemory(handle, (BYTE*)strenght_address, &new_temporary_strenght_value, sizeof(new_temporary_strenght_value), 0);
+					}
+				}
+				else
+				{
+					if (at_least_once_enabled_strenght_hack)
+					{
+						WriteProcessMemory(handle, (BYTE*)strenght_address, &static_old_strenght_value, sizeof(static_old_strenght_value), 0);
+					}
+				}
 			}
 		}
+		else
+		{
+			system("cls");
+			std::cout << "can't find game\nrestart external";
+		}
+		Sleep(1);
 	}
-	std::cin.get();
+
+	//std::cin.get();
 }
