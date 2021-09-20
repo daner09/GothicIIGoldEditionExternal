@@ -2,8 +2,8 @@
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <vector>
-#include "variables.hpp"
 #include <string>
+#include "variables.hpp"
 
 bool variables::inf_hp, variables::inf_mana, variables::temporary_strenght;
 
@@ -52,7 +52,7 @@ void update_menu()
 
 	std::cout << "\nF1 - inf. hp\nF2 - inf. mana\nF3 - temporary strenght\n";
 
-	for (int i = 0; i < 31; i++) std::cout << "-";;
+	for (int i = 0; i < 31; i++) std::cout << "-";
 
 	if (variables::inf_hp)
 	{
@@ -71,7 +71,7 @@ void update_menu()
 
 	std::cout << "\n"; // yes.
 
-	if (variables::inf_hp || variables::inf_mana || variables::temporary_strenght) for (int i = 0; i < 31; i++) std::cout << "-";;
+	if (variables::inf_hp || variables::inf_mana || variables::temporary_strenght) for (int i = 0; i < 31; i++) std::cout << "-";
 }
 
 void main()
@@ -177,6 +177,4 @@ void main()
 		}
 		Sleep(1);
 	}
-
-	//std::cin.get();
 }
